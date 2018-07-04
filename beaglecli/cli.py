@@ -34,23 +34,23 @@ import os
 import sys
 
 import click
-
+from click_default_group import DefaultGroup
 
 from beaglecli.configuration import get_config
 from beaglecli.rest_client import RESTClient
 from beaglecli import commands
 
 
-class AliasedGroup(click.Group):
+class AliasedGroup(DefaultGroup):
     def get_command(self, ctx, cmd_name):
-        cmd_list = click.Group.get_command(self, ctx, cmd_name)
-        if cmd_list is not None:
-            return cmd_list
+        command = DefaultGroup.get_command(self, ctx, cmd_name)
+        if command is not None:
+            return command
         matches = [x for x in self.list_commands(ctx) if x.startswith(cmd_name)]
         if not matches:
             return None
         elif len(matches) == 1:
-            return click.Group.get_command(self, ctx, matches[0])
+            return DefaultGroup.get_command(self, ctx, matches[0])
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
 
         return False
@@ -68,14 +68,18 @@ def cli():
             try:
                 config = get_config(config_path, create_default=False)
                 break
-            except (IOError, SyntaxError):
+            except (IOError):
                 pass
+            except (SyntaxError), error:
+                click.echo('Invalid syntax for: %s' % config_path)
+                click.echo(error)
+                sys.exit()
 
-        # if config:
-        #     break
+        if config:
+            break
 
     if not config:
-        click.echo('Unable to open configuration file ".beagle-cli.conf"')
+        click.echo('Unable to open configuration file')
         sys.exit(1)
 
     ctx.meta['CONFIG'] = config
@@ -88,8 +92,11 @@ def cli():
         False
     )
 
+
 @cli.group(
     cls=AliasedGroup,
+    default='ipv4',
+    default_if_no_args=False,
     help='Runs ping command on the router matching "routers" GLOB.'
 )
 def ping():
@@ -122,7 +129,6 @@ def ping():
 def ping_ipv4(router, address, vrf, max_routers):
     commands.ping(router, address, vrf, max_routers, 1)
 
-
 @ping.command(name='ipv6')
 @click.argument(
     'address',
@@ -154,18 +160,18 @@ def ping_ipv6(router, address, vrf, max_routers):
     commands.ping(router, address, vrf, max_routers, 2)
 
 
-
-
 @cli.group(
     cls=AliasedGroup,
+    default='ipv4',
+    default_if_no_args=False,
     help='Runs traceroute command on the router matching "routers" GLOB.'
 )
 def traceroute():
-    pass
+        pass
 
 @traceroute.command(name='ipv4')
 @click.argument(
-    'address', metavar='<address> or "summary"'
+    'address', metavar='<address>'
 )
 @click.option(
     '--router',
@@ -243,15 +249,28 @@ def show_routers(router):
     commands.show_routers(router)
 
 
-@show.group(cls=AliasedGroup)
+@show.group(
+    cls=AliasedGroup,
+    default='ipv4',
+    default_if_no_args=False,
+    help='Runs ping command on the router matching "routers" GLOB.'
+)
 def bgp():
     pass
 
-@bgp.group(cls=AliasedGroup)
+@bgp.group(
+    cls=AliasedGroup,
+    default='unicast',
+    default_if_no_args=False
+)
 def ipv4():
     pass
 
-@bgp.group(cls=AliasedGroup)
+@bgp.group(
+    cls=AliasedGroup,
+    default='unicast',
+    default_if_no_args=False
+)
 def ipv6():
     pass
 
@@ -285,7 +304,7 @@ def ipv6():
     default='global',
     help='VRF table. Default: global.'
 )
-def show_bgp_ipv6_unicast(router, prefix, vrf, max_routers):
+def show_bgp_ipv4_unicast(router, prefix, vrf, max_routers):
     commands.show_bgp_unicast(router, prefix, vrf, max_routers, 1)
 
 @ipv6.command(
