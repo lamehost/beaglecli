@@ -1,0 +1,28 @@
+title: Configuration
+type: object
+properties: 
+    api_base: 
+        type: string
+        default : http://localhost/lg/api/v1/
+        description: The URL to the web APIs
+    verify_ssl: 
+        type: boolean
+        default : True
+        description: Turns on SSL verification
+    username: 
+        type: string
+        default : someuser
+        description: The username used during authentication
+    password: 
+        type: string
+        default : somepass
+        description: The password used during authentication
+    debug: 
+        type: boolean
+        description: Turns on http debugging
+        default: False
+required:
+    - username
+    - password
+    - api_base
+additionalProperties: False
