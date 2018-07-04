@@ -1,4 +1,4 @@
 click==6.7
-jsonschema==2.6.0
-PyYAML==4.1
-yamlordereddictloader==0.4.0
+jsonschema
+PyYAML
+yamlordereddictloader
