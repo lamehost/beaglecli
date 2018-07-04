@@ -141,7 +141,10 @@ def get_config(filename, lower_keys=True, create_default=True):
     if os.path.exists(filename):
         with open(filename, 'r') as stream:
             defaults = get_defaults(configschema)
-            config = yaml.load(stream)
+            try:
+                config = yaml.load(stream)
+            except (yaml.scanner.ScannerError), error:
+                raise SyntaxError(error)
             config = updatedict(defaults, config)
             if lower_keys:
                 config = keys_to_lower(config)
