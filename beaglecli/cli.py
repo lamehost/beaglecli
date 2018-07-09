@@ -68,7 +68,7 @@ def cli():
             try:
                 config = get_config(config_path, create_default=False)
                 break
-            except (IOError):
+            except IOError:
                 pass
             except (SyntaxError), error:
                 click.echo('Invalid syntax for: %s' % config_path)
@@ -167,7 +167,7 @@ def ping_ipv6(router, address, vrf, max_routers):
     help='Runs traceroute command on the router matching "routers" GLOB.'
 )
 def traceroute():
-        pass
+    pass
 
 @traceroute.command(name='ipv4')
 @click.argument(
