@@ -79,40 +79,24 @@ class RESTClient(object):
         except requests.exceptions.ConnectionError:
             raise RuntimeError(u'(╯°□°）╯︵ ┻━┻ Unable to connect to the server.')
 
-        if request.status_code not in [200, 201]:
-            raise RuntimeError(u'(╯°□°）╯︵ ┻━┻ Server returned error state %d' % request.status_code)
-
-        result = request.json()
+        result = {'status': request.status_code, 'body': request.json()}
 
         return result
-
-    @staticmethod
-    def _to_cli_output(data):
-        try:
-            output = data['data']['output']
-        except KeyError:
-            raise RuntimeError('Unable to parse query result.')
-
-        # Transform most common HTML tags
-        # TODO, find a library for that
-        output = output.replace('<b>', '\033[1m')
-        output = output.replace('</b>', '\033[0m')
-
-        # data['data']['output'] = output
-
-        return output
 
     def get_routers(self, wildcard="*"):
         data = self._get_url('routers/')
         try:
-            routers = [_ for _ in data['data']['routers'] if fnmatch.fnmatch(_['name'], wildcard)]
+            routers = [
+                _ for _ in data['body']['data']['routers']
+                if fnmatch.fnmatch(_['name'], wildcard)
+            ]
         except StopIteration:
             raise RuntimeError('Unable to find a router whose name matches with "%s"' % wildcard)
 
         return routers
 
     def ping(self, address, router_id=1, afi=1, vrf='global'):
-        output = self._get_url(
+        result = self._get_url(
             'ping/%s' % address,
             {
                 'afi': afi,
@@ -122,12 +106,11 @@ class RESTClient(object):
                 'id': router_id
             }
         )
-        output = self._to_cli_output(output)
 
-        return output
+        return result
 
     def show_bgp_unicast(self, prefix, router_id=1, afi=1, vrf='global'):
-        output = self._get_url(
+        result = self._get_url(
             'show/bgp/%s' % prefix,
             {
                 'afi': afi,
@@ -137,20 +120,21 @@ class RESTClient(object):
                 'id': router_id
             }
         )
-        output = self._to_cli_output(output)
 
-        return output
+        return result
 
     def show_routers(self, wildcard="*"):
         routers = self.get_routers(wildcard)
 
         try:
-            return '\n'.join(sorted([_['name'] for _ in routers]))
+            result = '\n'.join(sorted([_['name'] for _ in routers]))
         except KeyError:
             raise RuntimeError('Unable to parse query result.')
 
+        return result
+
     def traceroute(self, address, router_id=1, afi=1, vrf='global'):
-        output = self._get_url(
+        result = self._get_url(
             'traceroute/%s' % address,
             {
                 'afi': afi,
@@ -160,6 +144,5 @@ class RESTClient(object):
                 'id': router_id
             }
         )
-        output = self._to_cli_output(output)
 
-        return output
+        return result
