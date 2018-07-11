@@ -136,7 +136,7 @@ def get_config(filename, lower_keys=True, create_default=True):
         try:
             configschema = yaml.load(stream, Loader=yamlordereddictloader.Loader)
         except yaml.scanner.ScannerError, error:
-            raise SyntaxError('Error while parsing configuration file: %s' % error)
+            raise SyntaxError('Error while parsing default configuration file: %s' % error)
 
     if os.path.exists(filename):
         with open(filename, 'r') as stream:
@@ -148,15 +148,16 @@ def get_config(filename, lower_keys=True, create_default=True):
             config = updatedict(defaults, config)
             if lower_keys:
                 config = keys_to_lower(config)
-    else:
+    elif create_default:
         config = get_defaults(configschema)
-        if create_default:
-            try:
-                with open(filename, 'w') as stream:
-                    yaml.dump(config, stream, default_flow_style=False)
-                    print 'Created configuration file: %s' % filename
-            except IOError:
-                raise IOError('Unable to create configuration file: %s' % filename)
+        try:
+            with open(filename, 'w') as stream:
+                yaml.dump(config, stream, default_flow_style=False)
+                print 'Created configuration file: %s' % filename
+        except IOError:
+            raise IOError('Unable to create configuration file: %s' % filename)
+    else:
+        raise IOError('Unable to open configuration file: %s' % filename)
 
     try:
         DefaultValidatingDraft4Validator(configschema).validate(config)
