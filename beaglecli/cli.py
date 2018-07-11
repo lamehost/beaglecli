@@ -79,8 +79,8 @@ def cli():
             break
 
     if not config:
-        click.echo('Unable to open configuration file')
-        sys.exit(1)
+        config_path = os.path.join(os.path.expanduser('~'), '.beaglecli.conf')
+        config = get_config(config_path, create_default=True)
 
     ctx.meta['CONFIG'] = config
 
