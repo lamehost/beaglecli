@@ -34,30 +34,16 @@ import os
 import sys
 
 import click
+from click_default_group import DefaultGroup
 
 from beaglecli.configuration import get_config
 from beaglecli.rest_client import RESTClient
 from beaglecli import commands
 
 
-class DefaultAliasedGroup(click.Group):
+class DefaultAliasedGroup(DefaultGroup):
     def __init__(self, *args, **kwargs):
-        # To resolve as the default command.
-        if not kwargs.get('ignore_unknown_options', True):
-            raise ValueError('Ignore Unknown Options is mandatory')
-        self.ignore_unknown_options = True
-
-        self.find_aliases = kwargs.pop('find_aliases', True)
-        self.default_cmd_name = kwargs.pop('default', None)
-        self.default_if_no_args = kwargs.pop('default_if_no_args', False)
-
         super(DefaultAliasedGroup, self).__init__(*args, **kwargs)
-
-    def parse_args(self, ctx, args):
-        if not args and self.default_if_no_args:
-            args.insert(0, self.default_cmd_name)
-
-        return super(DefaultAliasedGroup, self).parse_args(ctx, args)
 
     def get_command(self, ctx, cmd_name):
         base = super(DefaultAliasedGroup, self)
@@ -68,7 +54,8 @@ class DefaultAliasedGroup(click.Group):
         if self.find_aliases:
             matches = [x for x in self.list_commands(ctx) if x.startswith(cmd_name)]
             if not matches:
-                return None
+                ctx.arg0 = cmd_name
+                return base.get_command(ctx, self.default_cmd_name)
             elif len(matches) == 1:
                 return base.get_command(ctx, matches[0])
             ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
