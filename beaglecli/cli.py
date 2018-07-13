@@ -34,29 +34,49 @@ import os
 import sys
 
 import click
-from click_default_group import DefaultGroup
 
 from beaglecli.configuration import get_config
 from beaglecli.rest_client import RESTClient
 from beaglecli import commands
 
 
-class AliasedGroup(DefaultGroup):
+class DefaultAliasedGroup(click.Group):
+    def __init__(self, *args, **kwargs):
+        # To resolve as the default command.
+        if not kwargs.get('ignore_unknown_options', True):
+            raise ValueError('Ignore Unknown Options is mandatory')
+        self.ignore_unknown_options = True
+
+        self.find_aliases = kwargs.pop('find_aliases', True)
+        self.default_cmd_name = kwargs.pop('default', None)
+        self.default_if_no_args = kwargs.pop('default_if_no_args', False)
+
+        super(DefaultAliasedGroup, self).__init__(*args, **kwargs)
+
+    def parse_args(self, ctx, args):
+        if not args and self.default_if_no_args:
+            args.insert(0, self.default_cmd_name)
+
+        return super(DefaultAliasedGroup, self).parse_args(ctx, args)
+
     def get_command(self, ctx, cmd_name):
-        command = DefaultGroup.get_command(self, ctx, cmd_name)
+        base = super(DefaultAliasedGroup, self)
+
+        command = base.get_command(ctx, cmd_name)
         if command is not None:
             return command
-        matches = [x for x in self.list_commands(ctx) if x.startswith(cmd_name)]
-        if not matches:
-            return None
-        elif len(matches) == 1:
-            return DefaultGroup.get_command(self, ctx, matches[0])
-        ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
+        if self.find_aliases:
+            matches = [x for x in self.list_commands(ctx) if x.startswith(cmd_name)]
+            if not matches:
+                return None
+            elif len(matches) == 1:
+                return base.get_command(ctx, matches[0])
+            ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
 
         return False
 
 
-@click.group(cls=AliasedGroup)
+@click.group(cls=DefaultAliasedGroup)
 def cli():
     ctx = click.get_current_context()
 
@@ -93,8 +113,9 @@ def cli():
     )
 
 
+# ping
 @cli.group(
-    cls=AliasedGroup,
+    cls=DefaultAliasedGroup,
     default='ipv4',
     default_if_no_args=False,
     help='Runs ping command on the router matching "routers" GLOB.'
@@ -102,6 +123,7 @@ def cli():
 def ping():
     pass
 
+# ping ipv4
 @ping.command(name='ipv4')
 @click.argument('address', metavar="<address>")
 @click.option(
@@ -129,6 +151,8 @@ def ping():
 def ping_ipv4(router, address, vrf, max_routers):
     commands.ping(router, address, vrf, max_routers, 1)
 
+
+# ping ipv6
 @ping.command(name='ipv6')
 @click.argument(
     'address',
@@ -160,8 +184,9 @@ def ping_ipv6(router, address, vrf, max_routers):
     commands.ping(router, address, vrf, max_routers, 2)
 
 
+# traceroute
 @cli.group(
-    cls=AliasedGroup,
+    cls=DefaultAliasedGroup,
     default='ipv4',
     default_if_no_args=False,
     help='Runs traceroute command on the router matching "routers" GLOB.'
@@ -169,6 +194,8 @@ def ping_ipv6(router, address, vrf, max_routers):
 def traceroute():
     pass
 
+
+# traceroute ipv4
 @traceroute.command(name='ipv4')
 @click.argument(
     'address', metavar='<address>'
@@ -198,6 +225,8 @@ def traceroute():
 def traceroute_ipv4(router, address, vrf, max_routers):
     commands.traceroute(router, address, vrf, max_routers, 1)
 
+
+# traceroute ipv6
 @traceroute.command(name='ipv6')
 @click.argument(
     'address',
@@ -229,10 +258,13 @@ def traceroute_ipv6(router, address, vrf, max_routers):
     commands.traceroute(router, address, vrf, max_routers, 2)
 
 
-@cli.group(cls=AliasedGroup)
+# show
+@cli.group(cls=DefaultAliasedGroup)
 def show():
     pass
 
+
+# show routers
 @show.command(
     name='routers',
     help='Show routers matching the specified GLOB.'
@@ -249,8 +281,9 @@ def show_routers(router):
     commands.show_routers(router)
 
 
+# show bgp
 @show.group(
-    cls=AliasedGroup,
+    cls=DefaultAliasedGroup,
     default='ipv4',
     default_if_no_args=False,
     help='Runs ping command on the router matching "routers" GLOB.'
@@ -258,29 +291,26 @@ def show_routers(router):
 def bgp():
     pass
 
+
+# show bgp ipv4
 @bgp.group(
-    cls=AliasedGroup,
+    cls=DefaultAliasedGroup,
     default='unicast',
     default_if_no_args=False
 )
 def ipv4():
     pass
 
-@bgp.group(
-    cls=AliasedGroup,
-    default='unicast',
-    default_if_no_args=False
-)
-def ipv6():
-    pass
 
+# show bgp ipv4 unicast
 @ipv4.command(
     name='unicast',
     help='Show BGP IPv4 prefixes from the router matching GLOB.'
 )
 @click.argument(
     'prefix',
-    metavar="<prefix>"
+    metavar='<prefix>',
+    default="summary"
 )
 @click.option(
     '--router',
@@ -307,13 +337,26 @@ def ipv6():
 def show_bgp_ipv4_unicast(router, prefix, vrf, max_routers):
     commands.show_bgp_unicast(router, prefix, vrf, max_routers, 1)
 
+
+# show bgp ipv6
+@bgp.group(
+    cls=DefaultAliasedGroup,
+    default='unicast',
+    default_if_no_args=False
+)
+def ipv6():
+    pass
+
+
+# show bgp ipv6 unicast
 @ipv6.command(
     name='unicast',
     help='Show BGP IPv6 prefixes from the router matching GLOB.'
 )
 @click.argument(
     'prefix',
-    metavar='<prefix>'
+    metavar='<prefix>',
+    default="summary"
 )
 @click.option(
     '--router',
