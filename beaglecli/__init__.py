@@ -18,7 +18,7 @@ CLI for Beagle BGP looking glass.
 __version__ = "0.1"
 __author__ = "Marco Marzetti"
 __author_email__ = "marco@lamehost.it"
-__url__ = "https://github.com/lamehost/beagle_cli/"
+__url__ = "https://github.com/lamehost/beaglecli/"
 __description__ = "CLI for Beagle BGP looking glass."
 __license__ = "MIT"
 __classifiers__ = [
