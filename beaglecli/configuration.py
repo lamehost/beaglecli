@@ -114,7 +114,7 @@ def keys_to_lower(item):
     return result
 
 
-def _get_config(filename, lower_keys=True, create_default=True):
+def get_config(filename, lower_keys=True, create_default=True):
     """
     Gets default config and overwrite it with the content of filename.
     If the file does not exist, it creates it.
@@ -166,10 +166,10 @@ def _get_config(filename, lower_keys=True, create_default=True):
     return config
 
 
-def get_config(basename=None, create_default=True):
+def search_config(basename=None, create_default=True):
     """
-    Wrapper around _get_config() method.
-    Assuming basename is equal to 'foo.cfg', it looks for:
+    Wrapper around get_config() method to search config on multiple directories.
+    Assuming basename is equal to 'foo.cfg', it searches for:
         - ./.foo.cfg
         - ./foo.cfg
         - ~/.foo.cfg
@@ -195,14 +195,12 @@ def get_config(basename=None, create_default=True):
         for file_name in ['.%s' % basename, basename]:
             config_path = os.path.join(base_dir, file_name)
             try:
-                config = _get_config(config_path, create_default=False)
+                config = get_config(config_path, create_default=False)
                 break
             except IOError:
                 pass
             except (SyntaxError), error:
                 raise SyntaxError('Invalid syntax for: %s\n%s' % (config_path, error))
-                click.echo(error)
-                sys.exit()
 
         if config:
             break
