@@ -114,7 +114,7 @@ def keys_to_lower(item):
     return result
 
 
-def get_config(filename, lower_keys=True, create_default=True):
+def _get_config(filename, lower_keys=True, create_default=True):
     """
     Gets default config and overwrite it with the content of filename.
     If the file does not exist, it creates it.
@@ -163,4 +163,52 @@ def get_config(filename, lower_keys=True, create_default=True):
         DefaultValidatingDraft4Validator(configschema).validate(config)
     except ValidationError, error:
         raise SyntaxError('Error while parsing configuration file: %s' % error.message)
+    return config
+
+
+def get_config(basename=None, create_default=True):
+    """
+    Wrapper around _get_config() method.
+    Assuming basename is equal to 'foo.cfg', it looks for:
+        - ./.foo.cfg
+        - ./foo.cfg
+        - ~/.foo.cfg
+        - ~/foo.cfg
+        - /etc/.foo.cfg
+        - /etc/foo.cfg
+
+    If it can't find a file, it creates ~/.foo.cfg .
+
+    Args:
+        basename: name of the YAML configuration file
+        create_default: create a new file with default settings
+
+    Returns:
+        dict: configuration statements
+    """
+
+    assert basename, 'Configuration filename can\'t be null'
+
+    # Read configuration
+    config = {}
+    for base_dir in ['.', os.path.expanduser('~'), '/etc/']:
+        for file_name in ['.%s' % basename, basename]:
+            config_path = os.path.join(base_dir, file_name)
+            try:
+                config = _get_config(config_path, create_default=False)
+                break
+            except IOError:
+                pass
+            except (SyntaxError), error:
+                raise SyntaxError('Invalid syntax for: %s\n%s' % (config_path, error))
+                click.echo(error)
+                sys.exit()
+
+        if config:
+            break
+
+    if not config and create_default:
+        config_path = os.path.join(os.path.expanduser('~'), '.%s' % basename)
+        config = get_config(config_path, create_default=True)
+
     return config
