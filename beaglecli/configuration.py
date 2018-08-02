@@ -1,9 +1,13 @@
 """
 Configuration directives for the package.
 """
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 
-from jsonschema import Draft4Validator, validators
+from jsonschema import Draft4Validator
+from jsonschema import validators
 from jsonschema.exceptions import ValidationError
 
 import yaml
@@ -23,7 +27,7 @@ def extend_with_default(validator_class):
         """
         Function to set default values
         """
-        for _property, subschema in properties.iteritems():
+        for _property, subschema in iter(properties.items()):
             if "default" in subschema:
                 instance.setdefault(_property, subschema["default"])
 
@@ -57,7 +61,7 @@ def get_defaults(schema):
 
     if _type == 'object':
         result = dict(
-            (k, get_defaults(v)) for k, v in schema['properties'].iteritems()
+            (k, get_defaults(v)) for k, v in iter(schema['properties'].items())
         )
     elif _type == 'array':
         result = [get_defaults(schema['items'])]
@@ -107,7 +111,7 @@ def keys_to_lower(item):
     if isinstance(item, list):
         result = [keys_to_lower(v) for v in item]
     elif isinstance(item, dict):
-        result = dict((k.lower(), keys_to_lower(v)) for k, v in item.iteritems())
+        result = dict((k.lower(), keys_to_lower(v)) for k, v in iter(item.items()))
     else:
         result = item
 
@@ -135,7 +139,7 @@ def get_config(filename, lower_keys=True, create_default=True):
     with open(os.path.join(base_dir, 'configuration.yml')) as stream:
         try:
             configschema = yaml.load(stream, Loader=yamlordereddictloader.Loader)
-        except yaml.scanner.ScannerError, error:
+        except yaml.scanner.ScannerError as error:
             raise SyntaxError('Error while parsing default configuration file: %s' % error)
 
     if os.path.exists(filename):
@@ -143,7 +147,7 @@ def get_config(filename, lower_keys=True, create_default=True):
             defaults = get_defaults(configschema)
             try:
                 config = yaml.load(stream)
-            except (yaml.scanner.ScannerError), error:
+            except (yaml.scanner.ScannerError) as error:
                 raise SyntaxError(error)
             config = updatedict(defaults, config)
             if lower_keys:
@@ -153,7 +157,7 @@ def get_config(filename, lower_keys=True, create_default=True):
         try:
             with open(filename, 'w') as stream:
                 yaml.dump(config, stream, default_flow_style=False)
-                print 'Created configuration file: %s' % filename
+                print('Created configuration file: %s' % filename)
         except IOError:
             raise IOError('Unable to create configuration file: %s' % filename)
     else:
@@ -161,7 +165,7 @@ def get_config(filename, lower_keys=True, create_default=True):
 
     try:
         DefaultValidatingDraft4Validator(configschema).validate(config)
-    except ValidationError, error:
+    except ValidationError as error:
         raise SyntaxError('Error while parsing configuration file: %s' % error.message)
     return config
 
@@ -199,7 +203,7 @@ def search_config(basename=None, create_default=True):
                 break
             except IOError:
                 pass
-            except (SyntaxError), error:
+            except (SyntaxError) as error:
                 raise SyntaxError('Invalid syntax for: %s\n%s' % (config_path, error))
 
         if config:
