@@ -55,10 +55,10 @@ def _cli(ctx, config_path=None, router='*', max_routers=1):
     else:
         try:
             config = get_config(config_path, create_default=False)
-        except (SyntaxError), error:
+        except (SyntaxError) as error:
             click.echo('Invalid syntax for: %s' % config_path)
             click.echo(error)
-            sys.exit() 
+            sys.exit()
 
 
 
