@@ -79,7 +79,7 @@ class Commands(object):
     def ping(self, router, address, vrf, max_routers, afi):
         try:
             routers = self.show_routers(router, max_routers, True)
-        except RuntimeError, error:
+        except RuntimeError as error:
             print(unicode(error))
             sys.exit(1)
 
@@ -87,7 +87,7 @@ class Commands(object):
             print('\033[1mRouter\033[0m: %s' % _router['name'])
             try:
                 result = self.client.ping(address, _router['id'], afi, vrf)
-            except RuntimeError, error:
+            except RuntimeError as error:
                 print(unicode(error))
                 sys.exit(1)
 
@@ -96,7 +96,7 @@ class Commands(object):
     def show_bgp_unicast(self, router, prefix, vrf, max_routers, afi):
         try:
             routers = self.show_routers(router, max_routers, True)
-        except RuntimeError, error:
+        except RuntimeError as error:
             print(unicode(error))
             sys.exit(1)
 
@@ -104,7 +104,7 @@ class Commands(object):
             print('\033[1mRouter\033[0m: %s' % _router['name'])
             try:
                 result = self.client.show_bgp_unicast(prefix, _router['id'], afi, vrf)
-            except RuntimeError, error:
+            except RuntimeError as error:
                 print(unicode(error))
                 sys.exit(1)
 
@@ -113,7 +113,7 @@ class Commands(object):
     def show_routers(self, router, max_routers, compact=False):
         try:
             routers = self.client.get_routers(router)
-        except RuntimeError, error:
+        except RuntimeError as error:
             print(unicode(error))
             sys.exit(1)
 
@@ -133,7 +133,7 @@ class Commands(object):
     def traceroute(self, router, address, vrf, max_routers, afi):
         try:
             routers = self.show_routers(router, max_routers, True)
-        except RuntimeError, error:
+        except RuntimeError as error:
             print(unicode(error))
             sys.exit(1)
 
@@ -141,7 +141,7 @@ class Commands(object):
             print('\033[1mRouter\033[0m: %s' % _router['name'])
             try:
                 result = self.client.traceroute(address, _router['id'], afi, vrf)
-            except RuntimeError, error:
+            except RuntimeError as error:
                 print(unicode(error))
                 sys.exit(1)
 
